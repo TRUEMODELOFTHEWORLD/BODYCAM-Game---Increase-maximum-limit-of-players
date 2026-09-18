@@ -190,7 +190,7 @@ local function diagnostic()
     log("=== End diagnostic ===")
 end
 
-local function apply()
+local function apply(teamAccepted)
     log("=== F9 capacity experiment ===")
     local n, err = Config.read(root .. "/config.json")
     if not n then log("Result: FAILED; configuration: " .. err); return end
@@ -226,12 +226,14 @@ local function apply()
     end
     pending = {world = name(c.world), records = records, checks = 0}
     log(string.format("Local properties accepted: %d/%d", accepted, attempted))
-    log("Result: " .. (accepted > 0 and "PARTIAL" or "FAILED") .. "; backend advertisement and beyond-limit joins UNVERIFIED")
+    log("Result: " .. ((accepted > 0 or teamAccepted == true) and "PARTIAL" or "FAILED")
+        .. "; TeamConfig=" .. (teamAccepted == true and "ACCEPTED" or "UNCONFIRMED")
+        .. "; backend advertisement and beyond-limit joins UNVERIFIED")
     log("Session creation/update not intercepted. Existing lobby allocation may retain its original limit.")
     log("Team arrays/spawns and scoreboard/UI: NOT MODIFIED; validate with real clients")
 end
 
-local botTest = dofile(scripts .. "/bot_test.lua")({
+local applyTeamLimit = dofile(scripts .. "/team_limit.lua")({
     log=log, try=try, valid=valid, name=name, short=short, isType=isType, context=context,
     config=function() return Config.read(root .. "/config.json") end
 })
@@ -245,17 +247,48 @@ local fillWindow = dofile(scripts .. "/fill_window.lua")({
     playerConfig=function() return Config.read(root .. "/config.json") end,
     capEnabled=botProbe.capEnabled
 })
-local lastSummary, queued, pollFailed = nil, false, false
+local function loadBotLimit(source)
+    log("Bot limit load requested (" .. source .. ")")
+    if not botProbe.enableCap() then return end
+    local limit, err = Config.read(root .. "/config.json")
+    if not limit then
+        log("Bot initial-fill window unavailable: " .. tostring(err))
+        return
+    end
+    fillWindow.configure(context(), botProbe.currentCap(), limit)
+end
+local function loadPlayerLimit()
+    if fillWindow.activeWindow() then
+        log("F9 player limit REFUSED during the bot initial-fill window; retry after it restores")
+        return
+    end
+    local teamResult = applyTeamLimit()
+    if teamResult == "lower" then
+        log("F9 player limit REFUSED: start a fresh match to lower the active limit")
+        return
+    end
+    apply(teamResult)
+    if botProbe.capEnabled() then
+        local limit, err = Config.read(root .. "/config.json")
+        if limit then fillWindow.configure(context(), botProbe.currentCap(), limit)
+        else log("Bot initial-fill window unavailable: " .. tostring(err)) end
+    end
+end
+local lastSummary, queued, pollFailed, autoAttemptWorld = nil, false, false, nil
 local function poll()
     local c = context()
     local summary = name(c.world) .. "/" .. tostring(c.host) .. "/" .. tostring(c.count)
     if summary ~= lastSummary then lastSummary = summary; header(c) end
-    botTest.poll(c)
+    if not c.host then autoAttemptWorld = nil end
+    if c.host and not botProbe.capEnabled() and autoAttemptWorld ~= name(c.world) then
+        autoAttemptWorld = name(c.world)
+        loadBotLimit("automatic host detection")
+    end
     botProbe.poll(c)
     fillWindow.poll(c)
     if not pending then return end
     if not c.host or name(c.world) ~= pending.world then
-        log("Write observation stopped: host/world changed; F8 then F9 in the new hosted match")
+        log("Write observation stopped: host/world changed; press F9 in the new hosted match")
         pending = nil; return
     end
     local live = {}
@@ -282,26 +315,17 @@ local function dispatch(fn)
     if not ok then queued = false; log("Game-thread dispatch FAILED: " .. tostring(err)) end
 end
 
-log("=== BodycamHostTest phase 1 revision 3.6 loaded; inspected build 25228199 ===")
-log("F4 = apply configured limit to active TeamConfig")
-log("F3 = read-only bot-fill probe (no hooks or changes)")
-log("F1 = toggle Blueprint bot-decision watch and disable bot cap; turn it off before restarting mods")
-log("F10 = toggle configured bot cap on future spawn decisions; F1 turns off the hook and cap")
-log("F2 = toggle automatic TDM bot-fill window; restores full capacity after 35s on each map")
-log("F8 = diagnostic; F9 = apply config to your hosted match; restart to discard changes")
+log("=== BodycamHostTest phase 1 revision 3.7 loaded; inspected build 25228199 ===")
+log("F9 = load configured player limit; F10 = load configured bot limit")
 log("Config: " .. root .. "/config.json")
-log("F2 temporarily changes gameplay capacity on TDM map changes; actual human admission remains unverified.")
-RegisterKeyBind(Key.F8, function() dispatch(diagnostic) end)
-RegisterKeyBind(Key.F3, function() dispatch(botProbe.run) end)
-RegisterKeyBind(Key.F1, function() dispatch(botProbe.toggleWatch) end)
-RegisterKeyBind(Key.F10, function() dispatch(botProbe.toggleCap) end)
-RegisterKeyBind(Key.F2, function() dispatch(fillWindow.press) end)
-RegisterKeyBind(Key.F9, function() dispatch(apply) end)
-RegisterKeyBind(Key.F4, function() dispatch(botTest.raiseTeamCaps) end)
+log("Bot limit will load automatically when a hosted match is detected; existing bots are not removed")
+log("TDM bot fill may temporarily lower gameplay capacity for up to 35 seconds; human admission remains unverified")
+RegisterKeyBind(Key.F9, function() dispatch(loadPlayerLimit) end)
+RegisterKeyBind(Key.F10, function() dispatch(function() loadBotLimit("F10 refresh") end) end)
 LoopAsync(5000, function()
     dispatch(function()
         local ok, err = pcall(poll)
-        if not ok and not pollFailed then log("Automatic diagnostic FAILED (F8 to retry): " .. tostring(err)); pollFailed = true end
+        if not ok and not pollFailed then log("Automatic host check FAILED: " .. tostring(err)); pollFailed = true end
     end)
     return false
 end)

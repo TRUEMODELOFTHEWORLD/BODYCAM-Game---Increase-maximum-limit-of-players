@@ -48,21 +48,21 @@ return function(api)
         if not window then return end
         local asset, data, err = assetAndData(c)
         if not asset or api.name(c.world) ~= window.world or api.name(asset) ~= window.asset then
-            api.log('F2 window restore FAILED: ' .. tostring(err or 'world/asset changed') .. '; press F4 in the live match')
+            api.log('Bot fill window restore FAILED: ' .. tostring(err or 'world/asset changed') .. '; press F9 in the live match')
             window = nil; return
         end
         local before = api.try(function() return data.MaxPlayers end)
         if before == window.original then
-            api.log('F2 window: gameplay MaxPlayers already restored to ' .. window.original)
+            api.log('Bot fill window: gameplay MaxPlayers already restored to ' .. window.original)
             window = nil; return
         end
         if before ~= window.target then
-            api.log('F2 window restore REFUSED: field changed externally to ' .. tostring(before) .. '; press F4 if needed')
+            api.log('Bot fill window restore REFUSED: field changed externally to ' .. tostring(before) .. '; press F9 if needed')
             window = nil; return
         end
         local ok, writeErr = pcall(function() data.MaxPlayers = window.original end)
         local after = api.try(function() return data.MaxPlayers end)
-        api.log('F2 window ' .. reason .. ': TeamConfig.MaxPlayers ' .. before .. ' -> ' .. tostring(after)
+        api.log('Bot fill window ' .. reason .. ': TeamConfig.MaxPlayers ' .. before .. ' -> ' .. tostring(after)
             .. (ok and after == window.original and ' RESTORED' or (' FAILED ' .. tostring(writeErr))))
         window = nil
     end
@@ -74,43 +74,51 @@ return function(api)
         if not roster then return false, rosterErr end
         local before = api.try(function() return data.MaxPlayers end)
         if before ~= limit then return false, 'active TeamConfig.MaxPlayers=' .. tostring(before) .. ', expected ' .. limit end
-        if roster.target >= limit or roster.total > roster.target or roster.bots >= cap * 2 then
+        if roster.target >= limit or roster.total > roster.target or (cap > 0 and roster.bots >= cap * 2) then
             return false, string.format('initial fill window missed: roster=%d bots=%d target=%d',
                 roster.total, roster.bots, roster.target)
         end
         local ok, writeErr = pcall(function() data.MaxPlayers = roster.target end)
         local after = api.try(function() return data.MaxPlayers end)
-        api.log(string.format('F2 initial-fill test: humans=%d bots=%d; gameplay MaxPlayers %d -> %s; TeamMaxSize untouched',
+        api.log(string.format('Bot fill initial-fill test: humans=%d bots=%d; gameplay MaxPlayers %d -> %s; TeamMaxSize untouched',
             roster.humans, roster.bots, before, tostring(after)))
         if not ok or after ~= roster.target then return false, 'write failed: ' .. tostring(writeErr) end
         window = {world=api.name(c.world), asset=api.name(asset), original=before,
             target=roster.target, cap=cap, started=os.time()}
-        api.log('F2 window ACTIVE for at most 35 seconds, then restores ' .. before .. '; session maxPlayers stays ' .. limit)
+        api.log('Bot fill window ACTIVE for at most 35 seconds, then restores ' .. before .. '; session maxPlayers stays ' .. limit)
         return true
     end
 
-    local function press()
-        local c = api.context()
-        if armed then
+    local function configure(c, cap, limit)
+        if not c.host then api.log('Bot fill REFUSED: not an active host'); return false end
+        if not api.capEnabled() then api.log('Bot fill REFUSED: bot decision cap is not active'); return false end
+        local worldName = api.name(c.world)
+        local transition = worldName:find('/Game/Map/TransitionMap/', 1, true) ~= nil
+        if not transition and api.name(c.gm:GetClass()):lower():find('gm_teamdeathmatch', 1, true) == nil then
             armed = nil
-            if window then restore(c, 'manual restore') end
-            api.log('F2 automatic next-map fill test OFF')
-            return
+            api.log('Bot fill window skipped outside Team Deathmatch; future bot decisions are still capped')
+            return false
         end
-        if not api.capEnabled() then api.log('F2 REFUSED: enable F10 bot decision cap first'); return end
-        local cap, capErr = api.botConfig()
-        local limit, limitErr = api.playerConfig()
-        if cap == nil or not limit then api.log('F2 REFUSED: ' .. tostring(capErr or limitErr)); return end
-        local roster = c.host and state(c, cap)
-        if roster and roster.total <= roster.target and roster.bots < cap * 2 then
+        if window then
+            if window.cap == cap and window.original == limit and window.world == worldName then
+                api.log('Bot fill window already active; keeping its original restore timer')
+                return true
+            end
+            restore(c, 'reconfigured restore')
+        end
+        armed = {world=worldName, cap=cap, limit=limit}
+        if transition then
+            api.log('Bot fill ARMED for the next playable Team Deathmatch map')
+            return true
+        end
+        local roster = state(c, cap)
+        if roster and roster.total <= roster.target and (cap == 0 or roster.bots < cap * 2) then
             local ok, err = apply(c, cap, limit)
-            api.log('F2 immediate result: ' .. (ok and 'ACTIVE' or ('FAILED: ' .. tostring(err))))
-            if ok then armed = {world=api.name(c.world), cap=cap, limit=limit} end
+            api.log('Bot fill current-map result: ' .. (ok and 'ACTIVE' or ('DEFERRED: ' .. tostring(err))))
         else
-            if not c.host then api.log('F2 REFUSED: not an active host'); return end
-            armed = {world=api.name(c.world), cap=cap, limit=limit}
-            api.log('F2 ARMED for each next Team Deathmatch map; will lower TeamConfig.MaxPlayers during initial fill only')
+            api.log('Bot fill ARMED for each next Team Deathmatch map; existing bots are not removed')
         end
+        return true
     end
 
     local function poll(c)
@@ -125,19 +133,19 @@ return function(api)
                 if asset and api.name(asset) == window.asset and current == window.target then
                     local ok = pcall(function() data.MaxPlayers = window.original end)
                     local after = api.try(function() return data.MaxPlayers end)
-                    api.log('F2 world-change restore: ' .. current .. ' -> ' .. tostring(after)
+                    api.log('Bot fill world-change restore: ' .. current .. ' -> ' .. tostring(after)
                         .. (ok and after == window.original and ' RESTORED' or ' FAILED'))
                 else
-                    api.log('F2 window ended on world change; press F4 to confirm full gameplay capacity')
+                    api.log('Bot fill window ended on world change; press F9 to confirm full gameplay capacity')
                 end
                 window = nil
             else
                 local roster = state(c, window.cap)
                 if roster and roster.bots > window.cap * 2 then
-                    api.log('F2 result: FAILED; bots exceeded cap (' .. roster.bots .. ' > ' .. window.cap * 2 .. ')')
+                    api.log('Bot fill result: FAILED; bots exceeded cap (' .. roster.bots .. ' > ' .. window.cap * 2 .. ')')
                     restore(c, 'failed-window restore')
                 elseif os.time() - window.started >= 35 then
-                    if roster then api.log('F2 result at restore: roster=' .. roster.total .. ' bots=' .. roster.bots
+                    if roster then api.log('Bot fill result at restore: roster=' .. roster.total .. ' bots=' .. roster.bots
                         .. ' humans=' .. roster.humans .. ' target=' .. window.target) end
                     restore(c, 'timed restore')
                 end
@@ -147,11 +155,12 @@ return function(api)
             armed.world = api.name(c.world)
             if not api.capEnabled() then
                 armed = nil
-                api.log('F2 automatic next-map fill test OFF: F10 cap is off'); return
+                api.log('Bot fill stopped: bot decision cap is off'); return
             end
             local ok, err = apply(c, armed.cap, armed.limit)
-            api.log('F2 next-map result: ' .. (ok and 'ACTIVE' or ('FAILED: ' .. tostring(err))))
+            api.log('Bot fill next-map result: ' .. (ok and 'ACTIVE' or ('FAILED: ' .. tostring(err))))
         end
     end
-    return {press=press, poll=poll}
+    return {configure=configure, poll=poll,
+        activeWindow=function() return window ~= nil end}
 end

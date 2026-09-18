@@ -100,14 +100,14 @@ return function(api)
             local ok, err = pcall(function()
                 UnregisterHook(decisionPath, watch.pre, watch.post)
             end)
-            api.log("F1 bot-decision watch: " .. (ok and "STOPPED" or ("STOP FAILED: " .. tostring(err))))
+            api.log("Bot-decision watch: " .. (ok and "STOPPED" or ("STOP FAILED: " .. tostring(err))))
             if ok then watch = nil; capEnabled = false; capPerTeam = nil end
             return
         end
         local c = api.context()
-        if not c.host then api.log("F1 bot-decision watch REFUSED: not an active host"); return end
+        if not c.host then api.log("Bot-decision watch REFUSED: not an active host"); return end
         local f = StaticFindObject(decisionPath)
-        if not api.valid(f) then api.log("F1 bot-decision watch REFUSED: Blueprint function missing"); return end
+        if not api.valid(f) then api.log("Bot-decision watch REFUSED: Blueprint function missing"); return end
         local pre, post = RegisterHook(decisionPath, function(contextParam)
             callbackCount = callbackCount + 1
             if not capEnabled then return end
@@ -150,11 +150,11 @@ return function(api)
             end
         end)
         if type(pre) ~= "number" or type(post) ~= "number" then
-            api.log("F1 bot-decision watch FAILED: hook IDs unavailable"); return
+            api.log("Bot-decision watch FAILED: hook IDs unavailable"); return
         end
         watch = {pre=pre, post=post}
         reportedCount = callbackCount
-        api.log("F1 bot-decision watch STARTED (Blueprint function; observation only, no return override)")
+        api.log("Bot-decision watch STARTED (Blueprint function; override enabled after config loads)")
     end
     local function poll(c)
         if not watch then return end
@@ -175,23 +175,33 @@ return function(api)
             reportedErrors = hookErrors
         end
     end
+    local function enableCap()
+        local cap, err = api.botConfig()
+        if cap == nil then api.log('Bot limit REFUSED: ' .. tostring(err)); return false end
+        local c = api.context()
+        if not c.host then api.log('Bot limit REFUSED: not an active host'); return false end
+        if not watch then toggleWatch() end
+        if not watch then api.log('Bot limit REFUSED: decision watch unavailable'); return false end
+        local changed = not capEnabled or capPerTeam ~= cap
+        capPerTeam, capEnabled = cap, true
+        if changed then
+            api.log('Bot decision limit ACTIVE: maxBotsPerTeam=' .. cap ..
+                ' in TDM; total bot cap=' .. cap .. ' in FFA; maxPlayers unchanged')
+            api.log('Existing bots are not removed; the initial-fill window is needed for the next TDM map')
+        else
+            api.log('Bot decision limit already active at ' .. cap .. '; checking initial-fill window')
+        end
+        return true
+    end
     local function toggleCap()
         if capEnabled then
             capEnabled = false
-            api.log('F10 bot cap OFF; Blueprint decision watch remains active until F1')
+            api.log('Bot decision limit OFF; Blueprint decision watch remains active')
             return
         end
-        local cap, err = api.botConfig()
-        if cap == nil then api.log('F10 bot cap REFUSED: ' .. tostring(err)); return end
-        local c = api.context()
-        if not c.host then api.log('F10 bot cap REFUSED: not an active host'); return end
-        if not watch then toggleWatch() end
-        if not watch then api.log('F10 bot cap REFUSED: decision watch unavailable'); return end
-        capPerTeam, capEnabled = cap, true
-        api.log('F10 bot cap ON: maxBotsPerTeam=' .. cap ..
-            ' in TDM; total bot cap=' .. cap .. ' in FFA; maxPlayers unchanged')
-        api.log('Only future automatic spawn decisions can be blocked; existing bots remain until replaced or next map')
+        enableCap()
     end
-    return {run=run, toggleWatch=toggleWatch, toggleCap=toggleCap, poll=poll,
-        capEnabled=function() return capEnabled end}
+    return {run=run, toggleWatch=toggleWatch, toggleCap=toggleCap, enableCap=enableCap, poll=poll,
+        capEnabled=function() return capEnabled end,
+        currentCap=function() return capPerTeam end}
 end

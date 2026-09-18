@@ -4,7 +4,7 @@ An experimental [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) mod for the **host
 
 ## Install
 
-1. Close Bodycam. [Download `BodycamHostTool-win64.zip` from v0.1.0](https://github.com/TRUEMODELOFTHEWORLD/BODYCAM-Game---Increase-maximum-limit-of-players/releases/download/v0.1.0/BodycamHostTool-win64.zip) and extract its **contents** into `...\Steam\steamapps\common\Bodycam\Bodycam\Binaries\Win64\` — the folder containing `Bodycam-Win64-Shipping.exe`. The ZIP already contains UE4SS and the mod; do not create an extra `BodycamHostTool` folder. After extraction, `dwmapi.dll` should sit beside the game EXE, and `ue4ss\UE4SS.dll` should exist.
+1. Close Bodycam. [Download `BodycamHostTool-win64.zip` from v0.1.1](https://github.com/TRUEMODELOFTHEWORLD/BODYCAM-Game---Increase-maximum-limit-of-players/releases/download/v0.1.1/BodycamHostTool-win64.zip) and extract its **contents** into `...\Steam\steamapps\common\Bodycam\Bodycam\Binaries\Win64\` — the folder containing `Bodycam-Win64-Shipping.exe`. The ZIP already contains UE4SS and the mod; do not create an extra `BodycamHostTool` folder. After extraction, `dwmapi.dll` should sit beside the game EXE, and `ue4ss\UE4SS.dll` should exist.
 2. Edit `Win64\ue4ss\Mods\BodycamHostTest\config.json`:
 
    ```json
@@ -19,22 +19,21 @@ An experimental [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) mod for the **host
 
 If you already have UE4SS or other mods, back up your current `ue4ss` folder first. Copy the [BodycamHostTest source folder](mod/BodycamHostTest) into your existing `ue4ss\Mods` and add `BodycamHostTest : 1` to your existing `ue4ss\Mods\mods.txt`; keep your existing UE4SS runtime and mod list. If another mod uses F10, resolve that key conflict before testing the bot cap.
 
-## Keys while hosting
+When upgrading from v0.1.0, fully close Bodycam before replacing the old scripts. A full game restart clears the old key bindings and bot hook.
+
+## Use
+
+Host a match and press **F9 once** to load `maxPlayers`. The mod automatically loads `maxBotsPerTeam` when it detects a hosted match (normally within five seconds). It arms the Team Deathmatch initial-fill limit for the next map if the current map already has too many bots.
+
+There are only two mod keys:
 
 | Key | Action |
 | --- | --- |
-| **F4** | Apply `maxPlayers` to the active TeamConfig gameplay fields. |
-| **F9** | Try the other reflected host/session capacity fields and log each result. |
-| **F10** | Toggle the automatic bot decision cap from `maxBotsPerTeam`. |
-| **F2** | Toggle the **Team Deathmatch** initial-fill window. When armed, it briefly lowers gameplay capacity on each new map, then restores `maxPlayers` after at most 35 seconds. |
-| **F3** | Log the current human/bot roster and team counts without changing anything. |
-| **F8** | Log capacity diagnostics without changing anything. |
-| **F1** | Toggle the bot decision watch. When it is active, F1 stops the hook and turns off its cap; do this before **Restart All Mods**. |
+| **F9** | Load or reload `maxPlayers` into the reflected gameplay and host/session fields. |
+| **F10** | Load or reload `maxBotsPerTeam` and arm the Team Deathmatch initial-fill limit. It does **not** toggle the cap off. |
 
-For a new Team Deathmatch host, press **F4 → F9 → F10 → F2** once the match is live. If the current map has already filled with bots, F2 arms the test for the **next** map. After teams form, wait about 35 seconds and press **F3** to check the roster. Each key is a separate press; pressing F10 or F2 again turns that feature off. After changing `config.json`, turn F2 off if armed, press **F1** if the bot decision watch is active, use UE4SS **Restart All Mods**, then apply the keys again. To **lower** an already active player limit, start a fresh hosted match first; F4 intentionally refuses to shrink a live match.
+After editing the config, press F9 if you changed `maxPlayers`, or F10 if you changed `maxBotsPerTeam`; you do **not** need to restart the mod. To **lower** an already active player limit, start a fresh hosted match first. Existing bots are **not** removed immediately. On a TDM map fill, the mod temporarily lowers gameplay capacity to limit the initial bots, then restores the configured player limit after at most 35 seconds. In free-for-all Deathmatch, `maxBotsPerTeam` acts as a **total** bot-decision cap; the temporary initial-fill limit is TDM only.
 
-The F10 decision cap can also be tested in free-for-all Deathmatch, where `maxBotsPerTeam` acts as a **total** bot cap; the F2 initial-fill window is **TDM only**. Bots already present are not removed. The bot cap depends on Bodycam's future spawn decisions and is experimental.
-
-Observed in a hosted TDM test: with `maxPlayers=50` and `maxBotsPerTeam=6`, two map fills reached **12 bots, six per team**, and the gameplay capacity field was restored to 50. This does **not** prove 50 human slots, backend lobby advertisement, or joins past the normal limit. If a test fails, share the relevant `[BodycamHost]` lines from `BodycamHostTest.log` (remove player names before posting).
+Observed with the earlier four-key version in a hosted TDM test: with `maxPlayers=50` and `maxBotsPerTeam=6`, two map fills reached **12 bots, six per team**, and the gameplay capacity field was restored to 50. The new automatic two-key flow passes local Lua tests but still needs an in-game map-fill check. This does **not** prove 50 human slots, backend lobby advertisement, or joins past the normal limit. If a test fails, share the relevant `[BodycamHost]` lines from `BodycamHostTest.log` (remove player names before posting).
 
 UE4SS is included under its own MIT license in `ue4ss\LICENSE`. See [third-party details](THIRD-PARTY.md). This project is independent of Bodycam and UE4SS.
