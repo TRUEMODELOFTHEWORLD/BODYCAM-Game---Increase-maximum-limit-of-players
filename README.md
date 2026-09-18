@@ -4,7 +4,7 @@ An experimental [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) mod for the **host
 
 ## Install
 
-1. Close Bodycam. [Download `BodycamHostTool-win64.zip`](https://raw.githubusercontent.com/TRUEMODELOFTHEWORLD/BODYCAM-Game---Increase-maximum-limit-of-players/main/release/BodycamHostTool-win64.zip) and extract its **contents** into `...\Steam\steamapps\common\Bodycam\Bodycam\Binaries\Win64\` — the folder containing `Bodycam-Win64-Shipping.exe`. The ZIP already contains UE4SS and the mod; do not create an extra `BodycamHostTool` folder. After extraction, `dwmapi.dll` should sit beside the game EXE, and `ue4ss\UE4SS.dll` should exist.
+1. Close Bodycam. [Download `BodycamHostTool-win64.zip` from v0.1.0](https://github.com/TRUEMODELOFTHEWORLD/BODYCAM-Game---Increase-maximum-limit-of-players/releases/download/v0.1.0/BodycamHostTool-win64.zip) and extract its **contents** into `...\Steam\steamapps\common\Bodycam\Bodycam\Binaries\Win64\` — the folder containing `Bodycam-Win64-Shipping.exe`. The ZIP already contains UE4SS and the mod; do not create an extra `BodycamHostTool` folder. After extraction, `dwmapi.dll` should sit beside the game EXE, and `ue4ss\UE4SS.dll` should exist.
 2. Edit `Win64\ue4ss\Mods\BodycamHostTest\config.json`:
 
    ```json
