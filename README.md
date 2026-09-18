@@ -32,4 +32,12 @@ In Team Deathmatch, `maxBotsPerTeam` is per team. In free-for-all Deathmatch, it
 
 To lower a player limit already active in a match, start a new hosted match and press F9. If the mod does not load, check `ue4ss\Mods\BodycamHostTest\BodycamHostTest.log` and `ue4ss\UE4SS.log`.
 
-UE4SS is included under its own MIT license. See [third-party details](THIRD-PARTY.md).
+UE4SS is included under its own MIT license. See [third-party details](THIRD-PARTY.md).|
+
+Donation:
+BTC
+3FTzjsXen8HPhqT9RmqJJGtBNFkDsZNpcw
+ETH
+0xf1adc3c3d480847c0d3df1ad011ee2e7e340ff30
+XRP
+rHcXrn8joXL2Qe7BaMnhB5VRuj1XKEmUW6 (destination tag 253343087)
