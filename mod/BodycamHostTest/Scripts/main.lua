@@ -49,14 +49,9 @@ local function scalar(v)
 end
 
 -- A menu can have an authoritative GameMode. Require a networked server too.
-local function context()
+local function contextForWorld(world)
     local c = {host = false, reason = "No active local controller/world"}
-    for _, pc in ipairs(FindAllOf("PlayerController") or {}) do
-        if valid(pc) and try(function() return pc:IsLocalController() end) == true then
-            c.world = try(function() return pc:GetWorld() end)
-            break
-        end
-    end
+    c.world = world
     if not valid(c.world) then return c end
     c.gm = read(c.world, "AuthorityGameMode")
     c.gs = read(c.world, "GameState")
@@ -69,6 +64,15 @@ local function context()
         or "Not a confirmed networked host (client/menu/standalone/unknown); writes refused"
     if valid(c.gs) then c.count = try(function() return #c.gs.PlayerArray end) end
     return c
+end
+local function context()
+    for _, pc in ipairs(FindAllOf("PlayerController") or {}) do
+        if valid(pc) and try(function() return pc:IsLocalController() end) == true then
+            local world = try(function() return pc:GetWorld() end)
+            if valid(world) then return contextForWorld(world) end
+        end
+    end
+    return contextForWorld(nil)
 end
 
 -- Only these exact names qualify for a test write, after reflection verifies IntProperty.
@@ -315,13 +319,43 @@ local function dispatch(fn)
     if not ok then queued = false; log("Game-thread dispatch FAILED: " .. tostring(err)) end
 end
 
-log("=== BodycamHostTest phase 1 revision 3.7 loaded; inspected build 25228199 ===")
+log("=== BodycamHostTest phase 1 revision 3.8 next-map test loaded; inspected build 25228199 ===")
 log("F9 = load configured player limit; F10 = load configured bot limit")
 log("Config: " .. root .. "/config.json")
 log("Bot limit will load automatically when a hosted match is detected; existing bots are not removed")
 log("TDM bot fill may temporarily lower gameplay capacity for up to 35 seconds; human admission remains unverified")
 RegisterKeyBind(Key.F9, function() dispatch(loadPlayerLimit) end)
 RegisterKeyBind(Key.F10, function() dispatch(function() loadBotLimit("F10 refresh") end) end)
+local function earlyFill(param, event)
+    local actor = try(function() return param:Get() end)
+    if not valid(actor) then actor = param end
+    if not valid(actor) then return end
+    if event == 'BeginPlay' and
+        not name(actor:GetClass()):lower():find('gm_teamdeathmatch', 1, true) then return end
+    local world = try(function() return actor:GetWorld() end)
+    if not valid(world) then return end
+    local c = contextForWorld(world)
+    if not c.host or not valid(c.gm) or not valid(c.gs) then return end
+    if not name(c.gm:GetClass()):lower():find('gm_teamdeathmatch', 1, true) then return end
+    if event == 'BeginPlay' and name(actor) ~= name(c.gm) then return end
+    fillWindow.poll(c, true)
+end
+if type(RegisterInitGameStatePostHook) == 'function' then
+    RegisterInitGameStatePostHook(function(param)
+        local ok, err = pcall(earlyFill, param, 'InitGameState')
+        if not ok then log('Early bot fill InitGameState FAILED: ' .. tostring(err)) end
+    end)
+else log('Early bot fill InitGameState hook unavailable') end
+if type(RegisterBeginPlayPostHook) == 'function' then
+    RegisterBeginPlayPostHook(function(param)
+        local ok, err = pcall(earlyFill, param, 'BeginPlay')
+        if not ok then log('Early bot fill BeginPlay FAILED: ' .. tostring(err)) end
+    end)
+else log('Early bot fill BeginPlay hook unavailable') end
+LoopAsync(100, function()
+    dispatch(function() fillWindow.poll(context(), true) end)
+    return false
+end)
 LoopAsync(5000, function()
     dispatch(function()
         local ok, err = pcall(poll)

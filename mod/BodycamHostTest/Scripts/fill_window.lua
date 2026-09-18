@@ -2,6 +2,16 @@
 return function(api)
     local armed, window
 
+    local function worldKey(c)
+        -- A map can be selected again later; its path alone is not a travel ID.
+        return tostring(api.try(function() return c.world:GetAddress() end) or api.name(c.world))
+    end
+
+    local function isTdm(c)
+        return c.host and api.valid(c.gm) and
+            api.name(c.gm:GetClass()):lower():find('gm_teamdeathmatch', 1, true) ~= nil
+    end
+
     local function state(c, maxBots)
         local total, bots, humans, unknown = 0, 0, 0, 0
         local players = api.try(function() return c.gs.PlayerArray end)
@@ -18,7 +28,7 @@ return function(api)
     end
 
     local function assetAndData(c)
-        if not c.host or api.name(c.gm:GetClass()):lower():find('gm_teamdeathmatch', 1, true) == nil then
+        if not isTdm(c) then
             return nil, nil, 'requires a networked Team Deathmatch host'
         end
         local asset = api.try(function() return c.gs.GameModeConfigDataAsset end)
@@ -47,7 +57,7 @@ return function(api)
     local function restore(c, reason)
         if not window then return end
         local asset, data, err = assetAndData(c)
-        if not asset or api.name(c.world) ~= window.world or api.name(asset) ~= window.asset then
+        if not asset or worldKey(c) ~= window.world or api.name(asset) ~= window.asset then
             api.log('Bot fill window restore FAILED: ' .. tostring(err or 'world/asset changed') .. '; press F9 in the live match')
             window = nil; return
         end
@@ -83,7 +93,7 @@ return function(api)
         api.log(string.format('Bot fill initial-fill test: humans=%d bots=%d; gameplay MaxPlayers %d -> %s; TeamMaxSize untouched',
             roster.humans, roster.bots, before, tostring(after)))
         if not ok or after ~= roster.target then return false, 'write failed: ' .. tostring(writeErr) end
-        window = {world=api.name(c.world), asset=api.name(asset), original=before,
+        window = {world=worldKey(c), asset=api.name(asset), original=before,
             target=roster.target, cap=cap, started=os.time()}
         api.log('Bot fill window ACTIVE for at most 35 seconds, then restores ' .. before .. '; session maxPlayers stays ' .. limit)
         return true
@@ -94,19 +104,19 @@ return function(api)
         if not api.capEnabled() then api.log('Bot fill REFUSED: bot decision cap is not active'); return false end
         local worldName = api.name(c.world)
         local transition = worldName:find('/Game/Map/TransitionMap/', 1, true) ~= nil
-        if not transition and api.name(c.gm:GetClass()):lower():find('gm_teamdeathmatch', 1, true) == nil then
+        if not transition and not isTdm(c) then
             armed = nil
             api.log('Bot fill window skipped outside Team Deathmatch; future bot decisions are still capped')
             return false
         end
         if window then
-            if window.cap == cap and window.original == limit and window.world == worldName then
+            if window.cap == cap and window.original == limit and window.world == worldKey(c) then
                 api.log('Bot fill window already active; keeping its original restore timer')
                 return true
             end
             restore(c, 'reconfigured restore')
         end
-        armed = {world=worldName, cap=cap, limit=limit}
+        armed = {world=worldKey(c), cap=cap, limit=limit}
         if transition then
             api.log('Bot fill ARMED for the next playable Team Deathmatch map')
             return true
@@ -121,13 +131,15 @@ return function(api)
         return true
     end
 
-    local function poll(c)
+    local function poll(c, fast)
         -- Bodycam briefly creates this authoritative transition world with stale
         -- PlayerStates. It is not the new playable map's fill window.
-        if c.host and api.name(c.world):find('/Game/Map/TransitionMap/', 1, true) then return end
+        if not c.host or not api.valid(c.world) then return end
+        if api.name(c.world):find('/Game/Map/TransitionMap/', 1, true) then return end
+        local key = worldKey(c)
+        if fast and (not armed or key == armed.world or not isTdm(c)) then return end
         if window then
-            if not c.host then return end
-            if api.name(c.world) ~= window.world then
+            if key ~= window.world then
                 local asset, data = assetAndData(c)
                 local current = data and api.try(function() return data.MaxPlayers end)
                 if asset and api.name(asset) == window.asset and current == window.target then
@@ -139,7 +151,7 @@ return function(api)
                     api.log('Bot fill window ended on world change; press F9 to confirm full gameplay capacity')
                 end
                 window = nil
-            else
+            elseif not fast then
                 local roster = state(c, window.cap)
                 if roster and roster.bots > window.cap * 2 then
                     api.log('Bot fill result: FAILED; bots exceeded cap (' .. roster.bots .. ' > ' .. window.cap * 2 .. ')')
@@ -151,14 +163,26 @@ return function(api)
                 end
             end
         end
-        if armed and c.host and api.name(c.world) ~= armed.world then
-            armed.world = api.name(c.world)
+        -- A lobby is not a fill attempt. The original five-second check also
+        -- arrived after Bodycam had already bulk-filled the new TDM roster.
+        if armed and key ~= armed.world and isTdm(c) then
             if not api.capEnabled() then
                 armed = nil
                 api.log('Bot fill stopped: bot decision cap is off'); return
             end
             local ok, err = apply(c, armed.cap, armed.limit)
-            api.log('Bot fill next-map result: ' .. (ok and 'ACTIVE' or ('FAILED: ' .. tostring(err))))
+            if ok then
+                armed.world = key
+                api.log('Bot fill next-map result: ACTIVE')
+            elseif tostring(err):find('initial fill window missed:', 1, true) then
+                armed.world = key
+                api.log('Bot fill next-map result: FAILED: ' .. tostring(err))
+            elseif armed.lastWorld ~= key or armed.lastError ~= err then
+                -- Early lifecycle callbacks can precede PlayerArray or the
+                -- config asset. Retry quietly until the playable map is ready.
+                armed.lastWorld, armed.lastError = key, err
+                api.log('Bot fill next-map result: WAITING: ' .. tostring(err))
+            end
         end
     end
     return {configure=configure, poll=poll,
