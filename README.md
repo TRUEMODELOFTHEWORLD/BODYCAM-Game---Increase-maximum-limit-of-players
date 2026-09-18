@@ -5,7 +5,7 @@ A [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) mod for Bodycam hosts to set a p
 ## Install
 
 1. Close Bodycam and [download the current ZIP](release/BodycamHostTool-win64.zip?raw=1).
-2. Extract the ZIP's **contents** into the folder containing `Bodycam-Win64-Shipping.exe` (usually `...\Steam\steamapps\common\Bodycam\Bodycam\Binaries\Win64\`). UE4SS and the mod are included.
+2. Extract the ZIP's **contents** into the folder containing `Bodycam-Win64-Shipping.exe` (usually `...\Steam\steamapps\common\Bodycam\Bodycam\Binaries\Win64\`). UE4SS and the mod are included in the download. Everything needed is provided for you in the download. 
 3. Edit `ue4ss\Mods\BodycamHostTest\config.json`:
 
    ```json
