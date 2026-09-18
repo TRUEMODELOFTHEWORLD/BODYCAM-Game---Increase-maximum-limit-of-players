@@ -30,6 +30,22 @@ Host a match and press **F9 once** to load `maxPlayers`. The configured bot limi
 
 In Team Deathmatch, `maxBotsPerTeam` is per team. In free-for-all Deathmatch, it caps future bot-spawn decisions across the match. Bots already in a match are not removed; check the next map after changing the bot limit. Team Deathmatch may briefly reduce available slots during the initial bot fill, then restore the configured player limit. The next-map bot-fill fix still needs an in-game test.
 
-To lower a player limit already active in a match, start a new hosted match and press F9. If the mod does not load, check `ue4ss\Mods\BodycamHostTest\BodycamHostTest.log` and `ue4ss\UE4SS.log`.
+To lower a player limit already active in a match, start a new hosted match and press F9. If the mod does not load, check `ue4ss\Mods\BodycamHostTest\BodycamHostTest.log` and `ue4ss\UE4SS.log` -- or, try closing the Bodycam game and opening it up again and see if it works.
 
-UE4SS is included under its own MIT license. See [third-party details](THIRD-PARTY.md).
+UE4SS is included under its own MIT license. See [third-party details](THIRD-PARTY.md).|
+
+
+-----
+
+Share your appreciation by donating below!
+
+Donation:
+BTC
+3FTzjsXen8HPhqT9RmqJJGtBNFkDsZNpcw
+
+ETH
+0xf1adc3c3d480847c0d3df1ad011ee2e7e340ff30
+
+XRP
+rHcXrn8joXL2Qe7BaMnhB5VRuj1XKEmUW6
+(destination tag 253343087)
