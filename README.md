@@ -34,6 +34,11 @@ To lower a player limit already active in a match, start a new hosted match and 
 
 UE4SS is included under its own MIT license. See [third-party details](THIRD-PARTY.md).|
 
+
+-----
+
+Share your appreciation by donating below!
+
 Donation:
 BTC
 3FTzjsXen8HPhqT9RmqJJGtBNFkDsZNpcw
