@@ -251,6 +251,11 @@ local fillWindow = dofile(scripts .. "/fill_window.lua")({
     playerConfig=function() return Config.read(root .. "/config.json") end,
     capEnabled=botProbe.capEnabled
 })
+local applyServerSettings = dofile(scripts .. "/server_settings.lua")({
+    log=log, try=try, valid=valid, name=name, isType=isType, properties=properties,
+    context=context, specs=Config.serverSpecs, order=Config.serverOrder,
+    readConfig=function() return Config.readServerSettings(root .. "/config.json") end
+})
 local function loadBotLimit(source)
     log("Bot limit load requested (" .. source .. ")")
     if not botProbe.enableCap() then return end
@@ -319,13 +324,14 @@ local function dispatch(fn)
     if not ok then queued = false; log("Game-thread dispatch FAILED: " .. tostring(err)) end
 end
 
-log("=== BodycamHostTest phase 1 revision 3.8 next-map test loaded; inspected build 25228199 ===")
-log("F9 = load configured player limit; F10 = load configured bot limit")
+log("=== BodycamHostTest local revision 3.9 server-settings test loaded ===")
+log("F9 = load configured player limit; F10 = load configured bot limit; F11 = load enabled server settings")
 log("Config: " .. root .. "/config.json")
 log("Bot limit will load automatically when a hosted match is detected; existing bots are not removed")
 log("TDM bot fill may temporarily lower gameplay capacity for up to 35 seconds; human admission remains unverified")
 RegisterKeyBind(Key.F9, function() dispatch(loadPlayerLimit) end)
 RegisterKeyBind(Key.F10, function() dispatch(function() loadBotLimit("F10 refresh") end) end)
+RegisterKeyBind(Key.F11, function() dispatch(applyServerSettings) end)
 local function earlyFill(param, event)
     local actor = try(function() return param:Get() end)
     if not valid(actor) then actor = param end

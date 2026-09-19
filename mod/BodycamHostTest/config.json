@@ -1,4 +1,19 @@
 {
   "maxPlayers": 24,
-  "maxBotsPerTeam": 6
+  "maxBotsPerTeam": 6,
+  "serverSettings": {
+    "PhaseDuration": null,
+    "bUseTimerForWaitingPlayers": null,
+    "WaitingForPlayersDuration": null,
+    "RoundWarmupDuration": null,
+    "EndRoundDuration": null,
+    "RespawnDelay": null,
+    "RemainingTimeToStartTimerSounds": null,
+    "ScoreLimit": null,
+    "MaxPhases": null,
+    "TeamSwitchInterval": null,
+    "GraceWindowDistance": null,
+    "GraceWindowDuration": null,
+    "VoteMapTimerMax": null
+  }
 }
