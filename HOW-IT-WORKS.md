@@ -40,7 +40,7 @@ For example, setting:
 ```json
 {
   "maxPlayers": 40,
-  "maxBotsPerTeam": 6
+  "maxBotsPerTeam": null
 }
 ```
 
@@ -100,7 +100,7 @@ the mod sets approximately:
 
 ```text
 TeamConfig.MaxPlayers  = 40
-TeamConfig.TeamMaxSize = 20
+TeamConfig.TeamMaxSize = 20  (two-team modes only)
 ```
 
 For a normal two-team mode:
@@ -111,6 +111,8 @@ For a normal two-team mode:
      ├── Team 1: up to 20
      └── Team 2: up to 20
 ```
+
+In free-for-all Deathmatch, the mod preserves the game's existing `TeamMaxSize` (normally 1). Changing it as though Deathmatch had two teams was linked to unstable prematch behavior.
 
 This is a real gameplay configuration structure used by BODYCAM.
 
@@ -336,62 +338,17 @@ It does not simply delete existing bots.
 
 # Initial TDM Bot Fill
 
-Team Deathmatch introduces another complication.
+An earlier version temporarily lowered `TeamConfig.MaxPlayers` during initial bot fill and polled the match every 100 ms. Live testing associated that approach with freezes and repeated 30-second prematch cycles.
 
-BODYCAM may perform its initial bot population extremely quickly when a new match starts.
+Revision 4.0 removes the fill window from the runtime. The old implementation remains in `research/fill_window_experimental.lua` for study, but it is not packaged as an active mod script.
 
-By the time a normal periodic script detects the match, the game may already have filled many available positions.
+Bot limiting is now manual and experimental. The safe default is:
 
-The mod therefore contains an initial-fill workaround.
-
-For example:
-
-```text
-Configured maximum players: 40
-Configured bots per team:   6
-Current humans:              1
+```json
+"maxBotsPerTeam": null
 ```
 
-The initial desired population is approximately:
-
-```text
-1 human + 12 bots = 13
-```
-
-During the initial bot-fill period, the gameplay capacity can temporarily behave approximately like:
-
-```text
-40
- ↓
-13
-```
-
-This discourages BODYCAM from immediately attempting to create a huge number of bots.
-
-Once the initial fill period finishes, the intended player capacity is restored:
-
-```text
-13
- ↓
-40
-```
-
-The result is:
-
-```text
-Initial match population
-        │
-        ├── Limited bots
-        └── Existing humans
-
-Then:
-
-40-player capacity restored
-        │
-        └── Remaining positions available for humans
-```
-
-This mechanism is separate from the normal player-capacity override.
+With that value, no bot hook is installed.
 
 ---
 
@@ -453,7 +410,7 @@ Prevent future bot spawning
 above the configured limit
 ```
 
-The bot system can also initialize automatically when host conditions are detected.
+The bot hook is not initialized automatically. `maxBotsPerTeam` must contain an integer and the host must press F10. Setting it to `null` and pressing F10 disables and removes an existing hook.
 
 ---
 
