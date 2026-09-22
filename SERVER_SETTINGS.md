@@ -1,31 +1,41 @@
-# Local server-settings experiment
+# Experimental server settings
 
-This file and the F11 experiment are local only; they have not been pushed to GitHub.
+Set individual fields under `serverSettings`, then press **F11** in an active hosted match. All fields default to `null`.
 
-Edit `ue4ss/Mods/BodycamHostTest/config.json` in your Bodycam installation. The first two settings stay at the top:
+## Null behavior
 
-- `maxPlayers`: load with **F9**.
-- `maxBotsPerTeam`: loads automatically when hosting; refresh with **F10**.
-- `serverSettings`: set one or more fields to a value, then press **F11** in a hosted match.
+`null` means disabled. The configuration parser omits null entries from the table passed to the runtime writer. When every field is null, F11 logs that no settings are enabled and returns before resolving game objects or writing anything.
 
-`null` means **skip**. F11 does not change the player or bot limits. It checks reflected types and logs every immediate write in `BodycamHostTest.log`. A successful write is not proof that gameplay or other clients accepted it. Start with **one field at a time**. Values below are conservative input guards, not Bodycam's proven limits.
+These settings are never applied automatically. F11 first verifies every requested property, owning structure, and reflected type. If any requested field fails preflight, none of the requested fields are written.
 
-| JSON field under `serverSettings` | Test guard | Earlier TDM value | Likely effect |
+## Fields
+
+| JSON field | Input guard | Earlier observed value | Expected purpose |
 | --- | --- | ---: | --- |
 | `PhaseDuration` | 60–3600 | 600 | Match phase length, likely seconds |
 | `bUseTimerForWaitingPlayers` | true/false | true | Waiting countdown toggle |
-| `WaitingForPlayersDuration` | 0–300 | 30 | Waiting phase, likely seconds |
-| `RoundWarmupDuration` | 0–120 | 6 | Round warmup, likely seconds |
-| `EndRoundDuration` | 0–120 | 6 | Delay after a round, likely seconds |
+| `WaitingForPlayersDuration` | 0–300 | 30 | Waiting phase duration, likely seconds |
+| `RoundWarmupDuration` | 0–120 | 6 | Round warmup duration |
+| `EndRoundDuration` | 0–120 | 6 | Delay after a round |
 | `RespawnDelay` | 0–60 | 2 | Respawn wait, likely seconds |
 | `RemainingTimeToStartTimerSounds` | 0–30 | 5 | Countdown audio threshold |
 | `ScoreLimit` | integer 1–500 | 75 | TDM kill target |
 | `MaxPhases` | integer 1–20 | 1 | Phase count; meaning unclear |
-| `TeamSwitchInterval` | integer 0–120 | 5 | Team-switch timing; unit unknown |
+| `TeamSwitchInterval` | integer 0–120 | 5 | Team switching timing; unit unknown |
 | `GraceWindowDistance` | 0–5000 | 300 | Loadout grace distance; unit unknown |
-| `GraceWindowDuration` | 0–120 | 30 | Loadout grace time, likely seconds |
-| `VoteMapTimerMax` | integer 5–300 | 45 | Possible map-vote timer cap |
+| `GraceWindowDuration` | 0–120 | 30 | Loadout grace duration |
+| `VoteMapTimerMax` | integer 5–300 | 45 | Possible map vote timer cap |
 
-These values were reflected in a prior Bodycam build. F11 verifies each field against the running build before writing. `ScoreLimit` writes only the asset field; it does **not** invoke the separate active-score override, which caused uncertainty in an earlier test. For match-start settings, press F11 before a new map and check whether the value survives travel.
+The guards prevent obviously invalid input; they are not verified Bodycam limits. Most fields were reflected from an earlier build and have not been fully tested for gameplay effect, replication, persistence, or compatibility with every mode.
 
-Example: set `"RespawnDelay": 4`, leave the other fields `null`, press F11, then measure one respawn with another client.
+`ScoreLimit` changes the asset field without calling the separate active score override. A successful immediate readback only proves that the local property accepted the value.
+
+## Suggested test process
+
+1. Use a private hosted match.
+2. Enable one field and leave every other field null.
+3. Press F11 once.
+4. Observe the full round, map transition, and at least one connected client.
+5. Review `ue4ss\Mods\BodycamHostTest\BodycamHostTest.log`.
+
+Phase and waiting settings carry the most match-flow risk. Keep them null unless you are deliberately testing them.

@@ -1,62 +1,80 @@
 # Bodycam Host Tool
 
-A [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) mod for Bodycam hosts to set a player limit and limit automatic bots. Human players have joined hosted matches beyond Bodycam's default player count; the highest working limit is still unknown.
+A [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) mod and development base for hosting larger Bodycam matches, inspecting bot behavior, and testing reflected server settings.
+
+The player limit has worked with real players above Bodycam's default count. Bot limits and the additional server settings are experimental and have not all been validated across game modes or patches.
 
 ## Install
 
 1. Close Bodycam and [download the current ZIP](release/BodycamHostTool-win64.zip?raw=1).
-2. Extract the ZIP's **contents** into the folder containing `Bodycam-Win64-Shipping.exe` (usually `...\Steam\steamapps\common\Bodycam\Bodycam\Binaries\Win64\`). UE4SS and the mod are included in the download. Everything needed is provided for you in the download. 
-3. Edit `ue4ss\Mods\BodycamHostTest\config.json`:
+2. Extract the ZIP contents beside `Bodycam-Win64-Shipping.exe`, usually under `Bodycam\Binaries\Win64`.
+3. Edit `ue4ss\Mods\BodycamHostTest\config.json`.
 
-   ```json
-   {
-     "maxPlayers": 24,
-     "maxBotsPerTeam": 6
-   }
-   ```
+Already using UE4SS? Copy [mod/BodycamHostTest](mod/BodycamHostTest) into `ue4ss\Mods\` and enable `BodycamHostTest : 1` in `ue4ss\Mods\mods.txt`.
 
-`maxPlayers` accepts whole numbers from **2 to 64**. This is a test guard, not a proven game limit. `maxBotsPerTeam` accepts **0 to 32** and cannot exceed `maxPlayers`.
+## Safe default configuration
 
-Already have UE4SS? Copy only the [BodycamHostTest mod folder](mod/BodycamHostTest) into `ue4ss\Mods\` and add `BodycamHostTest : 1` to your existing `ue4ss\Mods\mods.txt`.
+```json
+{
+  "maxPlayers": 24,
+  "maxBotsPerTeam": null,
+  "serverSettings": {
+    "PhaseDuration": null,
+    "bUseTimerForWaitingPlayers": null,
+    "WaitingForPlayersDuration": null,
+    "RoundWarmupDuration": null,
+    "EndRoundDuration": null,
+    "RespawnDelay": null,
+    "RemainingTimeToStartTimerSounds": null,
+    "ScoreLimit": null,
+    "MaxPhases": null,
+    "TeamSwitchInterval": null,
+    "GraceWindowDistance": null,
+    "GraceWindowDuration": null,
+    "VoteMapTimerMax": null
+  }
+}
+```
 
-## Use
+`null` means disabled. Disabled values are removed while parsing and never reach the reflection writer. A null bot limit installs no hook. Server settings are written only when **F11** is pressed, and only fields with explicit non-null values are considered.
 
-Host a match and press **F9 once** to load `maxPlayers`. The configured bot limit loads automatically when you host.
+## Controls
 
-| Key | What it does |
+| Key | Action |
 | --- | --- |
-| **F9** | Load or reload `maxPlayers`. |
-| **F10** | Reload `maxBotsPerTeam` after editing the config. It does not turn the bot limit off. |
+| **F9** | Apply `maxPlayers` to the active hosted match. |
+| **F10** | Apply the experimental `maxBotsPerTeam` hook. Leave it null for normal match flow. |
+| **F11** | Apply only explicitly enabled `serverSettings`. |
+| **F12** | Log a read-only snapshot of live bot difficulty candidates. |
 
-In Team Deathmatch, `maxBotsPerTeam` is per team. In free-for-all Deathmatch, it caps future bot-spawn decisions across the match. Bots already in a match are not removed; check the next map after changing the bot limit. Team Deathmatch may briefly reduce available slots during the initial bot fill, then restore the configured player limit.
+`maxPlayers` accepts integers from 2 to 64 as a test guard. The highest stable game limit remains unknown. In free-for-all Deathmatch, F9 now preserves Bodycam's `TeamMaxSize` value instead of treating the match as two teams.
 
-To lower a player limit already active in a match, start a new hosted match and press F9. If the mod does not load, check `ue4ss\Mods\BodycamHostTest\BodycamHostTest.log` and `ue4ss\UE4SS.log` -- or, try closing the Bodycam game and opening it up again and see if it works.
+The older automatic bot-fill window was removed from the runtime. It changed gameplay capacity during prematch and could interfere with Bodycam's waiting phase, including repeated 30-second prerounds or freezes. Its source is retained in [research/fill_window_experimental.lua](research/fill_window_experimental.lua) for developers studying the approach.
 
-UE4SS is included under its own MIT license. See [third-party details](THIRD-PARTY.md).|
+## Experimental server settings
 
+See [SERVER_SETTINGS.md](SERVER_SETTINGS.md) for fields, ranges, and test status. Most were discovered through reflection and still require live host/client validation. Test one setting at a time in a private match.
 
------
+## Building on the project
 
+The scripts use reflected names, type checks, host checks, guarded writes, and local readback logging. This makes the project useful as a base for other Bodycam modes and projects such as Trench, but reflected paths and behavior may differ after patches.
 
-For projects that want to build off of this, here's additional useful information, in detail, for how this project works and is designed.
-[HOW IT WORKS](HOW-IT-WORKS.md),
+- `config.lua` parses configuration and removes disabled values.
+- `server_settings.lua` performs an all-or-nothing reflection preflight before writing.
+- `team_limit.lua` handles mode-aware gameplay capacity.
+- `bot_probe.lua` contains the experimental bot decision hook.
+- `difficulty_probe.lua` discovers live bot-related objects and fields without writing.
 
-Also, check out these other projects based off of the groundwork of this mod: 
+Read [HOW-IT-WORKS.md](HOW-IT-WORKS.md) for a deeper explanation of the runtime design. [TRENCH](https://github.com/0x0d4ddy/TRENCH) is another project built from this mod's groundwork.
 
-TRENCH https://github.com/0x0d4ddy/TRENCH
+Run `python -m unittest discover -s tests` before packaging. Live game behavior cannot be proven by mocked tests, so check `BodycamHostTest.log` after each private-match test.
 
+UE4SS is included under its MIT license. See [THIRD-PARTY.md](THIRD-PARTY.md).
 
+## Donations
 
+BTC: `3FTzjsXen8HPhqT9RmqJJGtBNFkDsZNpcw`
 
+ETH: `0xf1adc3c3d480847c0d3df1ad011ee2e7e340ff30`
 
---------
-Share your appreciation by donating below!
-
-Donation:
-BTC
-3FTzjsXen8HPhqT9RmqJJGtBNFkDsZNpcw
-ETH
-0xf1adc3c3d480847c0d3df1ad011ee2e7e340ff30
-XRP
-rHcXrn8joXL2Qe7BaMnhB5VRuj1XKEmUW6
-(destination tag 253343087)
+XRP: `rHcXrn8joXL2Qe7BaMnhB5VRuj1XKEmUW6` (destination tag `253343087`)

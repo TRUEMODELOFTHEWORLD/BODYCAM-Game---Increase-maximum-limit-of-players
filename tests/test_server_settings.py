@@ -78,9 +78,23 @@ class ServerSettingsTests(unittest.TestCase):
     def test_existing_two_settings_and_disabled_defaults(self):
         text = (SCRIPTS.parent / 'config.json').read_text()
         self.assertEqual(self.config.parse(text), 24)
-        self.assertEqual(self.config.parseBotCap(text), 6)
+        cap, reason = self.config.parseBotCap(text)
+        self.assertIsNone(cap)
+        self.assertIn('disabled', reason)
         self.assertEqual(len(self.config.parseServerSettings(text)), 0)
         self.apply()
+        self.assertIn('no serverSettings values enabled', self.logs())
+
+    def test_null_values_are_removed_before_runtime_apply(self):
+        selected = self.config.parseServerSettings(
+            '{"maxPlayers":24,"maxBotsPerTeam":null,"serverSettings":'
+            '{"PhaseDuration":null,"WaitingForPlayersDuration":null,'
+            '"RoundWarmupDuration":null,"RespawnDelay":null}}'
+        )
+        self.assertEqual(len(selected), 0)
+        self.g.selected = selected
+        self.apply()
+        self.assertEqual(self.g.phaseValue.RespawnDelay, 2)
         self.assertIn('no serverSettings values enabled', self.logs())
 
     def test_only_explicit_values_apply(self):

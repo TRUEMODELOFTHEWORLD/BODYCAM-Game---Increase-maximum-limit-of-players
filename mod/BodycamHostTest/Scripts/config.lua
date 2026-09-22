@@ -93,6 +93,7 @@ local function parseFields(text)
         return nil, 'maxPlayers must be an integer from 2 through 64'
     end
     local cap = fields.maxBotsPerTeam
+    if cap == NULL then cap = nil end
     if cap ~= nil and (type(cap) ~= 'number' or cap % 1 ~= 0 or cap < 0 or cap > 32 or cap > n) then
         return nil, 'maxBotsPerTeam must be an integer from 0 through min(32, maxPlayers)'
     end
@@ -126,7 +127,7 @@ end
 function M.parseBotCap(text)
     local fields, err = parseFields(text)
     if not fields then return nil, err end
-    if fields.maxBotsPerTeam == nil then return nil, 'maxBotsPerTeam is not configured' end
+    if fields.maxBotsPerTeam == nil then return nil, 'maxBotsPerTeam is disabled (null or omitted)' end
     return fields.maxBotsPerTeam
 end
 

@@ -245,12 +245,6 @@ local botProbe = dofile(scripts .. "/bot_probe.lua")({
     log=log, try=try, valid=valid, name=name, short=short, context=context,
     botConfig=function() return Config.readBotCap(root .. "/config.json") end
 })
-local fillWindow = dofile(scripts .. "/fill_window.lua")({
-    log=log, try=try, valid=valid, name=name, isType=isType, context=context,
-    botConfig=function() return Config.readBotCap(root .. "/config.json") end,
-    playerConfig=function() return Config.read(root .. "/config.json") end,
-    capEnabled=botProbe.capEnabled
-})
 local applyServerSettings = dofile(scripts .. "/server_settings.lua")({
     log=log, try=try, valid=valid, name=name, isType=isType, properties=properties,
     context=context, specs=Config.serverSpecs, order=Config.serverOrder,
@@ -258,43 +252,22 @@ local applyServerSettings = dofile(scripts .. "/server_settings.lua")({
 })
 local function loadBotLimit(source)
     log("Bot limit load requested (" .. source .. ")")
-    if not botProbe.enableCap() then return end
-    local limit, err = Config.read(root .. "/config.json")
-    if not limit then
-        log("Bot initial-fill window unavailable: " .. tostring(err))
-        return
-    end
-    fillWindow.configure(context(), botProbe.currentCap(), limit)
+    botProbe.enableCap()
 end
 local function loadPlayerLimit()
-    if fillWindow.activeWindow() then
-        log("F9 player limit REFUSED during the bot initial-fill window; retry after it restores")
-        return
-    end
     local teamResult = applyTeamLimit()
     if teamResult == "lower" then
         log("F9 player limit REFUSED: start a fresh match to lower the active limit")
         return
     end
     apply(teamResult)
-    if botProbe.capEnabled() then
-        local limit, err = Config.read(root .. "/config.json")
-        if limit then fillWindow.configure(context(), botProbe.currentCap(), limit)
-        else log("Bot initial-fill window unavailable: " .. tostring(err)) end
-    end
 end
-local lastSummary, queued, pollFailed, autoAttemptWorld = nil, false, false, nil
+local lastSummary, queued, pollFailed = nil, false, false
 local function poll()
     local c = context()
     local summary = name(c.world) .. "/" .. tostring(c.host) .. "/" .. tostring(c.count)
     if summary ~= lastSummary then lastSummary = summary; header(c) end
-    if not c.host then autoAttemptWorld = nil end
-    if c.host and not botProbe.capEnabled() and autoAttemptWorld ~= name(c.world) then
-        autoAttemptWorld = name(c.world)
-        loadBotLimit("automatic host detection")
-    end
     botProbe.poll(c)
-    fillWindow.poll(c)
     if not pending then return end
     if not c.host or name(c.world) ~= pending.world then
         log("Write observation stopped: host/world changed; press F9 in the new hosted match")
@@ -324,44 +297,19 @@ local function dispatch(fn)
     if not ok then queued = false; log("Game-thread dispatch FAILED: " .. tostring(err)) end
 end
 
-log("=== BodycamHostTest local revision 3.9 server-settings test loaded ===")
-log("F9 = load configured player limit; F10 = load configured bot limit; F11 = load enabled server settings")
+log("=== BodycamHostTest revision 4.0 loaded ===")
+log("F9 = player limit; F10 = experimental bot limit; F11 = explicitly enabled server settings")
+local difficultyProbe = dofile(scripts .. "/difficulty_probe.lua")({
+    log=log, try=try, valid=valid, name=name, short=short, context=context
+})
+log("F12 = inspect live bot difficulty candidates (read only)")
 log("Config: " .. root .. "/config.json")
-log("Bot limit will load automatically when a hosted match is detected; existing bots are not removed")
-log("TDM bot fill may temporarily lower gameplay capacity for up to 35 seconds; human admission remains unverified")
+log("Null or omitted optional settings cause no writes or hooks")
+log("Bot limiting is manual and experimental; maxBotsPerTeam=null keeps it fully disabled")
 RegisterKeyBind(Key.F9, function() dispatch(loadPlayerLimit) end)
 RegisterKeyBind(Key.F10, function() dispatch(function() loadBotLimit("F10 refresh") end) end)
 RegisterKeyBind(Key.F11, function() dispatch(applyServerSettings) end)
-local function earlyFill(param, event)
-    local actor = try(function() return param:Get() end)
-    if not valid(actor) then actor = param end
-    if not valid(actor) then return end
-    if event == 'BeginPlay' and
-        not name(actor:GetClass()):lower():find('gm_teamdeathmatch', 1, true) then return end
-    local world = try(function() return actor:GetWorld() end)
-    if not valid(world) then return end
-    local c = contextForWorld(world)
-    if not c.host or not valid(c.gm) or not valid(c.gs) then return end
-    if not name(c.gm:GetClass()):lower():find('gm_teamdeathmatch', 1, true) then return end
-    if event == 'BeginPlay' and name(actor) ~= name(c.gm) then return end
-    fillWindow.poll(c, true)
-end
-if type(RegisterInitGameStatePostHook) == 'function' then
-    RegisterInitGameStatePostHook(function(param)
-        local ok, err = pcall(earlyFill, param, 'InitGameState')
-        if not ok then log('Early bot fill InitGameState FAILED: ' .. tostring(err)) end
-    end)
-else log('Early bot fill InitGameState hook unavailable') end
-if type(RegisterBeginPlayPostHook) == 'function' then
-    RegisterBeginPlayPostHook(function(param)
-        local ok, err = pcall(earlyFill, param, 'BeginPlay')
-        if not ok then log('Early bot fill BeginPlay FAILED: ' .. tostring(err)) end
-    end)
-else log('Early bot fill BeginPlay hook unavailable') end
-LoopAsync(100, function()
-    dispatch(function() fillWindow.poll(context(), true) end)
-    return false
-end)
+RegisterKeyBind(Key.F12, function() dispatch(difficultyProbe) end)
 LoopAsync(5000, function()
     dispatch(function()
         local ok, err = pcall(poll)

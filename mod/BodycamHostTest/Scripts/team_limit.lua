@@ -42,7 +42,11 @@ return function(api)
             api.log("TeamConfig change REFUSED: unexpected current values " .. tostring(oldTotal) .. "/" .. tostring(oldTeam)); return
         end
         local nextTotal = limit
-        local nextTeam = math.ceil(limit / 2)
+        -- Deathmatch is free-for-all: its stock TeamMaxSize is 1. Raising it
+        -- changes a game rule unrelated to player capacity and may prevent
+        -- the waiting phase from completing. Only TDM has larger teams.
+        local isTdm = api.name(c.gm:GetClass()):lower():find('gm_teamdeathmatch', 1, true) ~= nil
+        local nextTeam = isTdm and math.ceil(limit / 2) or oldTeam
         api.log("Active asset: " .. api.name(asset) .. "; configured maxPlayers=" .. limit)
         api.log("Configured test target: MaxPlayers " .. oldTotal .. " -> " .. nextTotal
             .. "; TeamMaxSize " .. oldTeam .. " -> " .. nextTeam)

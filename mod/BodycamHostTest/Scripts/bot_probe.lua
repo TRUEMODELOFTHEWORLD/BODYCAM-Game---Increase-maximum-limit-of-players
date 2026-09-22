@@ -1,4 +1,4 @@
--- Targeted, read-only inspection of the active host's automatic bot fill.
+-- Bot inspection plus an explicitly enabled experimental spawn-decision cap.
 return function(api)
     local watch, callbackCount, reportedCount = nil, 0, 0
     local capEnabled, capPerTeam, blockedCount, reportedBlocked = false, nil, 0, 0
@@ -177,7 +177,21 @@ return function(api)
     end
     local function enableCap()
         local cap, err = api.botConfig()
-        if cap == nil then api.log('Bot limit REFUSED: ' .. tostring(err)); return false end
+        if cap == nil then
+            if capEnabled or watch then
+                capEnabled, capPerTeam = false, nil
+                if watch then
+                    local ok, why = pcall(function()
+                        UnregisterHook(decisionPath, watch.pre, watch.post)
+                    end)
+                    if ok then watch = nil end
+                    api.log('Bot limit disabled; hook removal=' .. (ok and 'SUCCESS' or ('FAILED: ' .. tostring(why))))
+                end
+            else
+                api.log('Bot limit disabled: ' .. tostring(err))
+            end
+            return false
+        end
         local c = api.context()
         if not c.host then api.log('Bot limit REFUSED: not an active host'); return false end
         if not watch then toggleWatch() end
@@ -187,9 +201,9 @@ return function(api)
         if changed then
             api.log('Bot decision limit ACTIVE: maxBotsPerTeam=' .. cap ..
                 ' in TDM; total bot cap=' .. cap .. ' in FFA; maxPlayers unchanged')
-            api.log('Existing bots are not removed; the initial-fill window is needed for the next TDM map')
+            api.log('Existing bots are not removed; this experimental hook can affect prematch flow')
         else
-            api.log('Bot decision limit already active at ' .. cap .. '; checking initial-fill window')
+            api.log('Bot decision limit already active at ' .. cap)
         end
         return true
     end

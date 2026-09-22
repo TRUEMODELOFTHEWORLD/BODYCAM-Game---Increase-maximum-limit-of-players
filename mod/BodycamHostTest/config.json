@@ -1,6 +1,6 @@
 {
   "maxPlayers": 24,
-  "maxBotsPerTeam": 6,
+  "maxBotsPerTeam": null,
   "serverSettings": {
     "PhaseDuration": null,
     "bUseTimerForWaitingPlayers": null,

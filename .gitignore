@@ -2,3 +2,4 @@
 *.dmp
 *.tmp
 __pycache__/
+backups/
