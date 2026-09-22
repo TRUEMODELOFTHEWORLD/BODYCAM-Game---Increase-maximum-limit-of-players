@@ -37,15 +37,26 @@ UE4SS is included under its own MIT license. See [third-party details](THIRD-PAR
 
 -----
 
+
+For projects that want to build off of this, here's additional useful information, in detail, for how this project works and is designed.
+[HOW IT WORKS](HOW-IT-WORKS.md),
+
+Also, check out these other projects based off of the groundwork of this mod: 
+
+TRENCH https://github.com/0x0d4ddy/TRENCH
+
+
+
+
+
+--------
 Share your appreciation by donating below!
 
 Donation:
 BTC
 3FTzjsXen8HPhqT9RmqJJGtBNFkDsZNpcw
-
 ETH
 0xf1adc3c3d480847c0d3df1ad011ee2e7e340ff30
-
 XRP
 rHcXrn8joXL2Qe7BaMnhB5VRuj1XKEmUW6
 (destination tag 253343087)
