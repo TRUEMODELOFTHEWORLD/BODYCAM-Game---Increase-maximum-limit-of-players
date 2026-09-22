@@ -16,9 +16,11 @@ Already using UE4SS? Copy [mod/BodycamHostTest](mod/BodycamHostTest) into `ue4ss
 
 ```json
 {
-  "maxPlayers": 24,
-  "maxBotsPerTeam": null,
-  "serverSettings": {
+  "playerAndBotLimits": {
+    "maxPlayers": 24,
+    "maxBotsPerTeam": null
+  },
+  "experimentalServerSettings": {
     "PhaseDuration": null,
     "bUseTimerForWaitingPlayers": null,
     "WaitingForPlayersDuration": null,
@@ -36,7 +38,9 @@ Already using UE4SS? Copy [mod/BodycamHostTest](mod/BodycamHostTest) into `ue4ss
 }
 ```
 
-`null` means disabled. Disabled values are removed while parsing and never reach the reflection writer. A null bot limit installs no hook. Server settings are written only when **F11** is pressed, and only fields with explicit non-null values are considered.
+The two commonly used limits are grouped first under `playerAndBotLimits`. Less established options are kept separately under `experimentalServerSettings`.
+
+`null` means disabled. Disabled values are removed while parsing and never reach the reflection writer. A null bot limit installs no hook. Experimental server settings are written only when **F11** is pressed, and only fields with explicit non-null values are considered.
 
 ## Controls
 
@@ -44,7 +48,7 @@ Already using UE4SS? Copy [mod/BodycamHostTest](mod/BodycamHostTest) into `ue4ss
 | --- | --- |
 | **F9** | Apply `maxPlayers` to the active hosted match. |
 | **F10** | Apply the experimental `maxBotsPerTeam` hook. Leave it null for normal match flow. |
-| **F11** | Apply only explicitly enabled `serverSettings`. |
+| **F11** | Apply only explicitly enabled `experimentalServerSettings`. |
 | **F12** | Log a read-only snapshot of live bot difficulty candidates. |
 
 `maxPlayers` accepts integers from 2 to 64 as a test guard. The highest stable game limit remains unknown. In free-for-all Deathmatch, F9 now preserves Bodycam's `TeamMaxSize` value instead of treating the match as two teams.

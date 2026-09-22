@@ -1,7 +1,9 @@
 {
-  "maxPlayers": 24,
-  "maxBotsPerTeam": null,
-  "serverSettings": {
+  "playerAndBotLimits": {
+    "maxPlayers": 24,
+    "maxBotsPerTeam": null
+  },
+  "experimentalServerSettings": {
     "PhaseDuration": null,
     "bUseTimerForWaitingPlayers": null,
     "WaitingForPlayersDuration": null,

@@ -87,7 +87,8 @@ class ServerSettingsTests(unittest.TestCase):
 
     def test_null_values_are_removed_before_runtime_apply(self):
         selected = self.config.parseServerSettings(
-            '{"maxPlayers":24,"maxBotsPerTeam":null,"serverSettings":'
+            '{"playerAndBotLimits":{"maxPlayers":24,"maxBotsPerTeam":null},'
+            '"experimentalServerSettings":'
             '{"PhaseDuration":null,"WaitingForPlayersDuration":null,'
             '"RoundWarmupDuration":null,"RespawnDelay":null}}'
         )
@@ -96,6 +97,17 @@ class ServerSettingsTests(unittest.TestCase):
         self.apply()
         self.assertEqual(self.g.phaseValue.RespawnDelay, 2)
         self.assertIn('no serverSettings values enabled', self.logs())
+
+    def test_grouped_primary_limits_are_easy_to_parse(self):
+        text = ('{"playerAndBotLimits":{"maxPlayers":50,"maxBotsPerTeam":4},'
+                '"experimentalServerSettings":{}}')
+        self.assertEqual(self.config.parse(text), 50)
+        self.assertEqual(self.config.parseBotCap(text), 4)
+
+    def test_legacy_flat_config_remains_compatible(self):
+        text = '{"maxPlayers":32,"maxBotsPerTeam":6,"serverSettings":{}}'
+        self.assertEqual(self.config.parse(text), 32)
+        self.assertEqual(self.config.parseBotCap(text), 6)
 
     def test_only_explicit_values_apply(self):
         selected = self.config.parseServerSettings(
@@ -138,6 +150,9 @@ class ServerSettingsTests(unittest.TestCase):
             '{"maxPlayers":50,"serverSettings":{"Unknown":5}}',
             '{"maxPlayers":50,"serverSettings":{"RespawnDelay":3,"RespawnDelay":4}}',
             '{"maxPlayers":50,"serverSettings":null}',
+            '{"playerAndBotLimits":{"maxPlayers":24},"maxPlayers":24}',
+            '{"playerAndBotLimits":{"maxPlayers":24,"unexpected":1}}',
+            '{"playerAndBotLimits":null,"experimentalServerSettings":{}}',
             '{"maxPlayers":50,}',
         ]
         for text in invalid:

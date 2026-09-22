@@ -23,9 +23,11 @@ The shipped configuration keeps optional behavior disabled:
 
 ```json
 {
-  "maxPlayers": 24,
-  "maxBotsPerTeam": null,
-  "serverSettings": {
+  "playerAndBotLimits": {
+    "maxPlayers": 24,
+    "maxBotsPerTeam": null
+  },
+  "experimentalServerSettings": {
     "PhaseDuration": null,
     "bUseTimerForWaitingPlayers": null,
     "WaitingForPlayersDuration": null,
@@ -60,6 +62,8 @@ Consequences:
 - Optional settings are never applied automatically.
 
 Tests cover the null configuration path and confirm that the mocked game values remain unchanged.
+
+The parser also accepts the earlier flat `maxPlayers`, `maxBotsPerTeam`, and `serverSettings` layout for compatibility. New configurations use the grouped layout so the two primary limits remain obvious at the top.
 
 ## Host authority check
 
@@ -146,7 +150,7 @@ The old implementation is retained only at `research/fill_window_experimental.lu
 
 ## F11: experimental server settings
 
-F11 applies only non-null fields under `serverSettings`. These include phase timing, respawn timing, scoring, team switching, loadout grace values, and the possible map vote timer.
+F11 applies only non-null fields under `experimentalServerSettings`. These include phase timing, respawn timing, scoring, team switching, loadout grace values, and the possible map vote timer.
 
 F11 uses an all-or-nothing preflight:
 

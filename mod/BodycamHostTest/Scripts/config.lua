@@ -83,23 +83,35 @@ end
 local function parseFields(text)
     local ok, fields = pcall(decode, text)
     if not ok then return nil, fields end
+    local grouped = fields.playerAndBotLimits ~= nil or fields.experimentalServerSettings ~= nil
     for key in pairs(fields) do
-        if key ~= 'maxPlayers' and key ~= 'maxBotsPerTeam' and key ~= 'serverSettings' then
+        local allowed = grouped and (key == 'playerAndBotLimits' or key == 'experimentalServerSettings')
+            or not grouped and (key == 'maxPlayers' or key == 'maxBotsPerTeam' or key == 'serverSettings')
+        if not allowed then
             return nil, 'Unknown top-level key: ' .. key
         end
     end
-    local n = fields.maxPlayers
+    local limits = grouped and fields.playerAndBotLimits or fields
+    if type(limits) ~= 'table' then return nil, 'playerAndBotLimits must be an object' end
+    if grouped then
+        for key in pairs(limits) do
+            if key ~= 'maxPlayers' and key ~= 'maxBotsPerTeam' then
+                return nil, 'Unknown playerAndBotLimits key: ' .. key
+            end
+        end
+    end
+    local n = limits.maxPlayers
     if type(n) ~= 'number' or n % 1 ~= 0 or n < 2 or n > 64 then
         return nil, 'maxPlayers must be an integer from 2 through 64'
     end
-    local cap = fields.maxBotsPerTeam
+    local cap = limits.maxBotsPerTeam
     if cap == NULL then cap = nil end
     if cap ~= nil and (type(cap) ~= 'number' or cap % 1 ~= 0 or cap < 0 or cap > 32 or cap > n) then
         return nil, 'maxBotsPerTeam must be an integer from 0 through min(32, maxPlayers)'
     end
-    local settings = fields.serverSettings
+    local settings = grouped and fields.experimentalServerSettings or fields.serverSettings
     if settings == NULL or (settings ~= nil and type(settings) ~= 'table') then
-        return nil, 'serverSettings must be an object'
+        return nil, (grouped and 'experimentalServerSettings' or 'serverSettings') .. ' must be an object'
     end
     local selected = {}
     for key, setting in pairs(settings or {}) do

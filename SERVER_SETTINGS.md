@@ -1,6 +1,6 @@
 # Experimental server settings
 
-Set individual fields under `serverSettings`, then press **F11** in an active hosted match. All fields default to `null`.
+Set individual fields under `experimentalServerSettings`, then press **F11** in an active hosted match. All fields default to `null`.
 
 ## Null behavior
 
