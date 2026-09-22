@@ -25,7 +25,7 @@ The shipped configuration keeps optional behavior disabled:
 {
   "playerAndBotLimits": {
     "maxPlayers": 24,
-    "maxBotsPerTeam": null
+    "maxBotsPerTeam": 12
   },
   "experimentalServerSettings": {
     "PhaseDuration": null,
@@ -58,7 +58,7 @@ Consequences:
 
 - A null server setting is absent from the table passed to `server_settings.lua`.
 - If every server setting is null, F11 returns before resolving or writing game properties.
-- A null `maxBotsPerTeam` value does not install `ShouldSpawnBots` hooks.
+- The shipped value `maxBotsPerTeam: 12` means a cap of 12 bots on team 0 and 12 bots on team 1 in TDM. The hook is installed only after F10. A null value keeps it disabled.
 - Optional settings are never applied automatically.
 
 Tests cover the null configuration path and confirm that the mocked game values remain unchanged.
@@ -133,7 +133,7 @@ When explicitly enabled, its hook:
 
 It does not delete existing bots. In TDM, the configured number is treated as a per-team cap. In free-for-all Deathmatch, it is treated as a total cap.
 
-The hook is experimental because BODYCAM may expect bot filling to complete before advancing its waiting phase. Use an integer only for deliberate testing. With `maxBotsPerTeam: null`, F10 disables the cap and removes an existing hook when possible.
+The hook is experimental because BODYCAM may expect bot filling to complete before advancing its waiting phase. The shipped value is 12, meaning 12 bots per side in TDM. The host must still press F10 to install the experimental hook. Setting `maxBotsPerTeam` to null and pressing F10 disables the cap and removes an existing hook when possible.
 
 ### Removed automatic fill window
 

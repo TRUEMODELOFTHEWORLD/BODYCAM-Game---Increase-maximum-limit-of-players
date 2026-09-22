@@ -305,7 +305,7 @@ local difficultyProbe = dofile(scripts .. "/difficulty_probe.lua")({
 log("F12 = inspect live bot difficulty candidates (read only)")
 log("Config: " .. root .. "/config.json")
 log("Null or omitted optional settings cause no writes or hooks")
-log("Bot limiting is manual and experimental; maxBotsPerTeam=null keeps it fully disabled")
+log("Bot limiting is manual and experimental; press F10 to apply maxBotsPerTeam")
 RegisterKeyBind(Key.F9, function() dispatch(loadPlayerLimit) end)
 RegisterKeyBind(Key.F10, function() dispatch(function() loadBotLimit("F10 refresh") end) end)
 RegisterKeyBind(Key.F11, function() dispatch(applyServerSettings) end)

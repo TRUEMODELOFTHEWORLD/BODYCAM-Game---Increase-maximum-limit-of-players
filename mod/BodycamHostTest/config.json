@@ -1,7 +1,7 @@
 {
   "playerAndBotLimits": {
     "maxPlayers": 24,
-    "maxBotsPerTeam": null
+    "maxBotsPerTeam": 12
   },
   "experimentalServerSettings": {
     "PhaseDuration": null,

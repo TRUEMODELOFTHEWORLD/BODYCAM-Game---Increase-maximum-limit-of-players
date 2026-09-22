@@ -18,7 +18,7 @@ Already using UE4SS? Copy [mod/BodycamHostTest](mod/BodycamHostTest) into `ue4ss
 {
   "playerAndBotLimits": {
     "maxPlayers": 24,
-    "maxBotsPerTeam": null
+    "maxBotsPerTeam": 12
   },
   "experimentalServerSettings": {
     "PhaseDuration": null,
@@ -40,14 +40,14 @@ Already using UE4SS? Copy [mod/BodycamHostTest](mod/BodycamHostTest) into `ue4ss
 
 The two commonly used limits are grouped first under `playerAndBotLimits`. Less established options are kept separately under `experimentalServerSettings`.
 
-`null` means disabled. Disabled values are removed while parsing and never reach the reflection writer. A null bot limit installs no hook. Experimental server settings are written only when **F11** is pressed, and only fields with explicit non-null values are considered.
+`null` means disabled. Disabled values are removed while parsing and never reach the reflection writer. The shipped value is 12 bots per side in TDM; the hook still runs only after F10. Set it to null to disable it. Experimental server settings are written only when **F11** is pressed, and only fields with explicit non-null values are considered.
 
 ## Controls
 
 | Key | Action |
 | --- | --- |
 | **F9** | Apply `maxPlayers` to the active hosted match. |
-| **F10** | Apply the experimental `maxBotsPerTeam` hook. Leave it null for normal match flow. |
+| **F10** | Apply the experimental bot cap. The default `12` means 12 bots per side in TDM. |
 | **F11** | Apply only explicitly enabled `experimentalServerSettings`. |
 | **F12** | Log a read-only snapshot of live bot difficulty candidates. |
 

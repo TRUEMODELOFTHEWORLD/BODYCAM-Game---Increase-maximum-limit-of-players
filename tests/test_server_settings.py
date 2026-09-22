@@ -75,12 +75,10 @@ class ServerSettingsTests(unittest.TestCase):
     def logs(self):
         return '\n'.join(self.g.logs.values())
 
-    def test_existing_two_settings_and_disabled_defaults(self):
+    def test_shipped_primary_limits_and_disabled_server_settings(self):
         text = (SCRIPTS.parent / 'config.json').read_text()
         self.assertEqual(self.config.parse(text), 24)
-        cap, reason = self.config.parseBotCap(text)
-        self.assertIsNone(cap)
-        self.assertIn('disabled', reason)
+        self.assertEqual(self.config.parseBotCap(text), 12)
         self.assertEqual(len(self.config.parseServerSettings(text)), 0)
         self.apply()
         self.assertIn('no serverSettings values enabled', self.logs())
