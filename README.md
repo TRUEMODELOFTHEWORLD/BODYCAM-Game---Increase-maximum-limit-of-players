@@ -10,8 +10,6 @@ The player limit has worked with real players above Bodycam's default count. Bot
 2. Extract the ZIP contents beside `Bodycam-Win64-Shipping.exe`, usually under `Bodycam\Binaries\Win64`.
 3. Edit `ue4ss\Mods\BodycamHostTest\config.json`.
 
-Or open `gui\BodycamHostTool-GUI.bat` for the Windows control panel. It edits the same configuration file and can send the existing F9–F12 commands to a running BODYCAM window.
-
 Already using UE4SS? Copy [mod/BodycamHostTest](mod/BodycamHostTest) into `ue4ss\Mods\` and enable `BodycamHostTest : 1` in `ue4ss\Mods\mods.txt`.
 
 ## Main settings
@@ -45,20 +43,6 @@ The remaining `experimentalServerSettings` can be left at `null`. Developers int
 | **F10** | Apply the experimental bot cap. The default `12` means 12 bots per side in TDM. |
 
 Advanced development controls, including F11 server settings and the F12 read-only bot probe, are documented in [HOW-IT-WORKS.md](HOW-IT-WORKS.md).
-
-## Windows control panel
-
-The optional GUI keeps the existing Lua mod as the source of gameplay behavior. It provides:
-
-- prominent player and bot limit controls;
-- Save + Apply buttons for F9 and F10;
-- a collapsed experimental-settings section with an F11 button;
-- an F12 read-only bot probe button;
-- config and log shortcuts;
-- a Steam launch shortcut;
-- validation through bounded numeric controls and explicit enable checkboxes.
-
-The GUI must briefly focus the BODYCAM window to send a hotkey. Read `BodycamHostTest.log` to confirm the Lua mod accepted an action.
 
 The older automatic bot-fill window was removed from the runtime. It changed gameplay capacity during prematch and could interfere with Bodycam's waiting phase, including repeated 30-second prerounds or freezes. Its source is retained in [research/fill_window_experimental.lua](research/fill_window_experimental.lua) for developers studying the approach.
 
