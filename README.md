@@ -12,35 +12,28 @@ The player limit has worked with real players above Bodycam's default count. Bot
 
 Already using UE4SS? Copy [mod/BodycamHostTest](mod/BodycamHostTest) into `ue4ss\Mods\` and enable `BodycamHostTest : 1` in `ue4ss\Mods\mods.txt`.
 
-## Safe default configuration
+## Main settings
+
+Most users only need the first section of `config.json`:
 
 ```json
 {
   "playerAndBotLimits": {
     "maxPlayers": 24,
     "maxBotsPerTeam": 12
-  },
-  "experimentalServerSettings": {
-    "PhaseDuration": null,
-    "bUseTimerForWaitingPlayers": null,
-    "WaitingForPlayersDuration": null,
-    "RoundWarmupDuration": null,
-    "EndRoundDuration": null,
-    "RespawnDelay": null,
-    "RemainingTimeToStartTimerSounds": null,
-    "ScoreLimit": null,
-    "MaxPhases": null,
-    "TeamSwitchInterval": null,
-    "GraceWindowDistance": null,
-    "GraceWindowDuration": null,
-    "VoteMapTimerMax": null
   }
 }
 ```
 
-The two commonly used limits are grouped first under `playerAndBotLimits`. Less established options are kept separately under `experimentalServerSettings`.
+### `maxPlayers`
 
-`null` means disabled. Disabled values are removed while parsing and never reach the reflection writer. The shipped value is 12 bots per side in TDM; the hook still runs only after F10. Set it to null to disable it. Experimental server settings are written only when **F11** is pressed, and only fields with explicit non-null values are considered.
+Sets the requested maximum player capacity for the hosted match. Press **F9** after entering a hosted match to apply it. Values from 2 through 64 are accepted as a test range; 64 is not a guaranteed stable or officially supported player count.
+
+### `maxBotsPerTeam`
+
+Sets the experimental bot cap. In Team Deathmatch, `12` means up to 12 bots on each side. In free-for-all Deathmatch, it means 12 bots total. Press **F10** to apply it. Existing bots are not removed. Set the value to `null` and press F10 to disable and remove the bot hook when possible.
+
+The remaining `experimentalServerSettings` can be left at `null`. Developers interested in those options should read [How the tool works](HOW-IT-WORKS.md#f11-experimental-server-settings) and the [server settings reference](SERVER_SETTINGS.md).
 
 ## Controls
 
@@ -48,16 +41,10 @@ The two commonly used limits are grouped first under `playerAndBotLimits`. Less 
 | --- | --- |
 | **F9** | Apply `maxPlayers` to the active hosted match. |
 | **F10** | Apply the experimental bot cap. The default `12` means 12 bots per side in TDM. |
-| **F11** | Apply only explicitly enabled `experimentalServerSettings`. |
-| **F12** | Log a read-only snapshot of live bot difficulty candidates. |
 
-`maxPlayers` accepts integers from 2 to 64 as a test guard. The highest stable game limit remains unknown. In free-for-all Deathmatch, F9 now preserves Bodycam's `TeamMaxSize` value instead of treating the match as two teams.
+Advanced development controls, including F11 server settings and the F12 read-only bot probe, are documented in [HOW-IT-WORKS.md](HOW-IT-WORKS.md).
 
 The older automatic bot-fill window was removed from the runtime. It changed gameplay capacity during prematch and could interfere with Bodycam's waiting phase, including repeated 30-second prerounds or freezes. Its source is retained in [research/fill_window_experimental.lua](research/fill_window_experimental.lua) for developers studying the approach.
-
-## Experimental server settings
-
-See [SERVER_SETTINGS.md](SERVER_SETTINGS.md) for fields, ranges, and test status. Most were discovered through reflection and still require live host/client validation. Test one setting at a time in a private match.
 
 ## Building on the project
 
