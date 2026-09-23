@@ -225,6 +225,9 @@ Readback has limits. A locally retained value does not prove that Steam or EOS a
 | `Scripts/server_settings.lua` | F11 preflight and guarded one-shot setting writes |
 | `Scripts/difficulty_probe.lua` | F12 read-only bot difficulty discovery |
 | `research/fill_window_experimental.lua` | Removed prematch fill-window experiment |
+| `gui/BodycamHostTool-GUI.ps1` | Optional Windows config editor and F9–F12 launcher |
+
+The GUI does not implement a second gameplay path. It edits the same JSON file and sends the same hotkeys already registered by `main.lua`.
 
 ## Demonstrated and unproven behavior
 
